@@ -53,11 +53,12 @@ def calculate_text_features(text_query):
         text_features /= text_features.norm(dim=-1, keepdim=True)
     return text_features
 
-def calculate_image_features(image_path):
-    img = preprocess(Image.open(image_path)).unsqueeze(0).to(device)
-
-    image_features = model.encode_image(img)
+def calculate_image_features(image):
+    image = preprocess(image).unsqueeze(0).to(device)
+    
+    image_features = model.encode_image(image)
     image_features /= image_features.norm(dim=-1, keepdim=True)
+    
     return image_features
 
 def find_similar_images_to_text(text_query, category=None, k=3):
@@ -84,30 +85,20 @@ def find_similar_images_to_text(text_query, category=None, k=3):
     similar_images_data = fashion_data.iloc[[index for index, _ in top_similar_images]]
     return similar_images_data, top_similar_images
 
-def plot_similar_images_to_text(similar_images, similarity_scores):
-    num_images = len(similar_images)
-    num_cols = 3
-    num_rows = (num_images + num_cols - 1) // num_cols
+def find_similar_images_to_img(query_img_features, needed_category, num_similar=3):
+    category_data = fashion_data[fashion_data['category'] == needed_category]
 
-    fig, axes = plt.subplots(num_rows, num_cols, figsize=(12, 8))
-    fig.suptitle("Similar Images", fontsize=16)
-    axes = np.reshape(axes, (num_rows, num_cols))
+    similarities = []
+    for index, row in category_data.iterrows():
+        row_img_features = torch.tensor(row['image_features'], device=device, dtype=torch.float32)
 
-    for i, (index, row) in enumerate(similar_images.iterrows()):
-        ax = axes[i // num_cols, i % num_cols]
-        img_path = row['full_path']
+        similarity = torch.dot(row_img_features, query_img_features.squeeze())
+        similarities.append((row['full_path'], similarity.item()))
 
-        img = Image.open(img_path)
-        ax.imshow(img)
-        ax.axis('off')
+    similarities.sort(key=lambda x: x[1], reverse=True)
+    similar_images = similarities[:num_similar]
 
-        description = row['description']
-        similarity = similarity_scores[i][1]
-        ax.set_title(f"{description}\nSimilarity: {similarity:.4f}", fontsize=10)
-
-    plt.tight_layout()
-    plt.subplots_adjust(top=0.9)
-    plt.show()
+    return similar_images
 
 def catalog(category):
     items = fashion_data[fashion_data['category'] == category.lower()]
@@ -118,7 +109,7 @@ def catalog(category):
     for _, row in items.iterrows():
         img_path = row['full_path']
         img = Image.open(img_path)
-        img = img.resize(target_size) #, Image.BICUBIC
+        img = img.resize(target_size)
         caption = row['file_name']
         images_with_captions.append((img, caption))
 
@@ -137,8 +128,20 @@ def search_by_text(text, category):
     return images_with_captions
 
 def search_by_image(image, category):
-    c = image + category
-    return c
+    image_pil = Image.fromarray(image)
+    query_img_features = calculate_image_features(image_pil)
+    
+    category = category.lower()
+    similar_images = find_similar_images_to_img(query_img_features, category)
+    images_with_captions = []
+
+    for img_path, _ in similar_images:
+        img = Image.open(img_path)
+        caption = f"Similar image: {img_path}"
+        images_with_captions.append((img, caption))
+
+    return images_with_captions
+
 
 def search_by_image_and_text(text, image, category, alpha):
     d = (alpha * text + (1-alpha) * image) + category
@@ -160,7 +163,7 @@ with gr.Blocks() as demo:
     with gr.Tab("Similar to input img"):
         sti_image_input = gr.Image()
         sti_dropdown_input = gr.Dropdown(categories, label="Choose needed category please")
-        sti_image_output = gr.Image()
+        sti_image_output = gr.Gallery()
         sti_button = gr.Button("Show")
 
     with gr.Tab("Similar to input img and text"):
