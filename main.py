@@ -1,23 +1,14 @@
 import gradio as gr
 import numpy as np
 import pandas as pd
-import matplotlib
-import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
 from PIL import Image
-import matplotlib.pyplot as plt
 from PIL import Image
 import numpy as np
 import pandas as pd
-import ast
-import os
 import torch
 import clip
 from torchvision.transforms import Compose, Resize, CenterCrop, ToTensor, Normalize
 from clip import clip
-import random
-import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
 from torch.nn.functional import normalize
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -145,8 +136,8 @@ def catalog(category):
         img_path = row['full_path']
         img = Image.open(img_path)
         img = img.resize(target_size)
-        caption = row['file_name']
-        images_with_captions.append((img, caption))
+        #caption = row['file_name']
+        images_with_captions.append((img)) #, caption
 
     return images_with_captions
 
@@ -157,8 +148,8 @@ def search_by_text(text, category):
     for i, (_, row) in enumerate(similar_images_data.iterrows()):
         img_path = row['full_path']
         img = Image.open(img_path)
-        caption = f"{row['description']}\nSimilarity: {similarity_scores[i][1]:.4f}"
-        images_with_captions.append((img, caption))
+        #caption = f"{row['description']}\nSimilarity: {similarity_scores[i][1]:.4f}"
+        images_with_captions.append((img)) #, caption
 
     return images_with_captions
 
@@ -169,8 +160,8 @@ def search_by_image(image, category):
 
     for img_path, _ in similar_images:
         img = Image.open(img_path)
-        caption = f"Similar image: {img_path}"
-        images_with_captions.append((img, caption))
+        #caption = f"Similar image: {img_path}"
+        images_with_captions.append((img)) #, caption
 
     return images_with_captions
 
@@ -182,8 +173,8 @@ def search_by_image_and_text(text, image, category, alpha):
     for _, row in enumerate(similar_images_data.iterrows()):
         img_path = row[1]['full_path']
         img = Image.open(img_path)
-        caption = f"{row[1]['description']}"
-        images_with_captions.append((img, caption))
+        #caption = f"{row[1]['description']}"
+        images_with_captions.append((img)) #, caption
 
     return images_with_captions
 
@@ -191,8 +182,8 @@ with gr.Blocks() as demo:
     gr.Markdown("Some features that can be done using CLIP")
     with gr.Tab("Catalog"):
         catalog_dropdown_input = gr.Dropdown(categories0, label="Choose needed category please")
-        catalog_button = gr.Button("Show")
-        catalog_image_output_plot = gr.Gallery(preview=True)
+        #catalog_button = gr.Button("Show")
+        catalog_image_output_plot = gr.Gallery(columns=7, show_download_button=False, object_fit="contain", height="auto")    #preview=True
 
     with gr.Tab("Search by Text description"):
         sbt_text_input = gr.Textbox(label="Add text description of interested item please")
@@ -210,14 +201,15 @@ with gr.Blocks() as demo:
         img_and_txt_text_input = gr.Textbox(label="Add text description of interested item please")
         img_and_txt_image_input = gr.Image()
         img_and_txt_dropdown_input = gr.Dropdown(categories, label="Choose needed category please")
-        img_and_txt_slider = gr.Slider(0, 1, label="How much text feature is more important than image feature?")
+        img_and_txt_slider = gr.Slider(0, 1, value=0.65 ,label="Text impact strength:")
         img_and_txt_button = gr.Button("Show")
         img_and_txt_image_output = gr.Gallery(preview=True)
 
-    with gr.Accordion("Open for More!"):
-        gr.Markdown("How to use")
+    #with gr.Accordion("Open for More!"):
+    #    gr.Markdown("How to use")
 
-    catalog_button.click(catalog, inputs=catalog_dropdown_input, outputs=catalog_image_output_plot)
+    #catalog_button.click(catalog, inputs=catalog_dropdown_input, outputs=catalog_image_output_plot)
+    catalog_dropdown_input.change(catalog, inputs=catalog_dropdown_input, outputs=catalog_image_output_plot)
     sbt_button.click(search_by_text, inputs=[sbt_text_input, sbt_dropdown_input], outputs=sbt_image_output)
     sti_button.click(search_by_image, inputs=[sti_image_input, sti_dropdown_input], outputs=sti_image_output)
     img_and_txt_button.click(search_by_image_and_text, 
