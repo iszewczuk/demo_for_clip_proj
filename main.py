@@ -1,27 +1,19 @@
 import gradio as gr
+from custom_functions_dataset import clean_and_convert
+from clip_functions import calculate_text_features, calculate_image_features
 import numpy as np
 import pandas as pd
 from PIL import Image
-from PIL import Image
-import numpy as np
-import pandas as pd
 import torch
 import clip
+from PIL import Image
 from torchvision.transforms import Compose, Resize, CenterCrop, ToTensor, Normalize
-from clip import clip
-from torch.nn.functional import normalize
+
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 model, preprocess = clip.load("ViT-B/32")
 
 fashion_data = pd.read_csv('fashion_set1.csv')
-
-def clean_and_convert(embedding_str):
-    cleaned_str = embedding_str.strip("['").strip("']").replace("\n", "").replace("  ", " ")
-    str_list = cleaned_str.split()
-    float_array = [float(item) for item in str_list]
-    float_np_array = np.array(float_array)
-    return float_np_array
 
 fashion_data['text_features'] = fashion_data['text_features'].apply(clean_and_convert)
 fashion_data['image_features'] = fashion_data['image_features'].apply(clean_and_convert)
@@ -31,26 +23,6 @@ categories0 = ["Dress", "Top", "Pants", "Blazer", "Jacket",
 
 categories = ["All", "Dress", "Top", "Pants", "Blazer", "Jacket", 
               "High heels", "Boots", "Sneakers", "Tshirt"]
-
-def preprocess_text(text):
-    text_tokens = clip.tokenize([text]).to(device)
-    return text_tokens
-
-def calculate_text_features(text_query):
-    text_tokens = clip.tokenize([text_query]).to(device)
-    
-    with torch.no_grad():
-        text_features = model.encode_text(text_tokens).float()
-        text_features /= text_features.norm(dim=-1, keepdim=True)
-    return text_features
-
-def calculate_image_features(image):
-    image = preprocess(image).unsqueeze(0).to(device)
-    
-    image_features = model.encode_image(image)
-    image_features /= image_features.norm(dim=-1, keepdim=True)
-    
-    return image_features
 
 def find_similar_images_to_text(text_query, category=None, k=3):
     query_text_features = calculate_text_features(text_query)
@@ -136,8 +108,7 @@ def catalog(category):
         img_path = row['full_path']
         img = Image.open(img_path)
         img = img.resize(target_size)
-        #caption = row['file_name']
-        images_with_captions.append((img)) #, caption
+        images_with_captions.append((img))
 
     return images_with_captions
 
@@ -148,8 +119,7 @@ def search_by_text(text, category):
     for i, (_, row) in enumerate(similar_images_data.iterrows()):
         img_path = row['full_path']
         img = Image.open(img_path)
-        #caption = f"{row['description']}\nSimilarity: {similarity_scores[i][1]:.4f}"
-        images_with_captions.append((img)) #, caption
+        images_with_captions.append((img)) 
 
     return images_with_captions
 
@@ -160,8 +130,7 @@ def search_by_image(image, category):
 
     for img_path, _ in similar_images:
         img = Image.open(img_path)
-        #caption = f"Similar image: {img_path}"
-        images_with_captions.append((img)) #, caption
+        images_with_captions.append((img))
 
     return images_with_captions
 
@@ -173,17 +142,16 @@ def search_by_image_and_text(text, image, category, alpha):
     for _, row in enumerate(similar_images_data.iterrows()):
         img_path = row[1]['full_path']
         img = Image.open(img_path)
-        #caption = f"{row[1]['description']}"
-        images_with_captions.append((img)) #, caption
+        images_with_captions.append((img)) 
 
     return images_with_captions
+
 
 with gr.Blocks() as demo:
     gr.Markdown("Some features that can be done using CLIP")
     with gr.Tab("Catalog"):
         catalog_dropdown_input = gr.Dropdown(categories0, label="Choose needed category please")
-        #catalog_button = gr.Button("Show")
-        catalog_image_output_plot = gr.Gallery(columns=7, show_download_button=False, object_fit="contain", height="auto")    #preview=True
+        catalog_image_output_plot = gr.Gallery(columns=7, show_download_button=False, object_fit="contain", height="auto")
 
     with gr.Tab("Search by Text description"):
         sbt_text_input = gr.Textbox(label="Add text description of interested item please")
@@ -205,10 +173,7 @@ with gr.Blocks() as demo:
         img_and_txt_button = gr.Button("Show")
         img_and_txt_image_output = gr.Gallery(preview=True)
 
-    #with gr.Accordion("Open for More!"):
-    #    gr.Markdown("How to use")
-
-    #catalog_button.click(catalog, inputs=catalog_dropdown_input, outputs=catalog_image_output_plot)
+    
     catalog_dropdown_input.change(catalog, inputs=catalog_dropdown_input, outputs=catalog_image_output_plot)
     sbt_button.click(search_by_text, inputs=[sbt_text_input, sbt_dropdown_input], outputs=sbt_image_output)
     sti_button.click(search_by_image, inputs=[sti_image_input, sti_dropdown_input], outputs=sti_image_output)
