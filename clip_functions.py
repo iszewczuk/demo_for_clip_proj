@@ -6,11 +6,11 @@ from torchvision.transforms import Compose, Resize, CenterCrop, ToTensor, Normal
 device = "cuda" if torch.cuda.is_available() else "cpu"
 model, preprocess = clip.load("ViT-B/32")
 
-def preprocess_text(text):
+def preprocess_text(text: str) -> torch.Tensor:
     text_tokens = clip.tokenize([text]).to(device)
     return text_tokens
 
-def calculate_text_features(text_query):
+def calculate_text_features(text_query: str) -> torch.Tensor:
     text_tokens = clip.tokenize([text_query]).to(device)
     
     with torch.no_grad():
@@ -18,7 +18,7 @@ def calculate_text_features(text_query):
         text_features /= text_features.norm(dim=-1, keepdim=True)
     return text_features
 
-def calculate_image_features(image):
+def calculate_image_features(image: Image.Image) -> torch.Tensor:
     image = preprocess(image).unsqueeze(0).to(device)
     
     image_features = model.encode_image(image)
