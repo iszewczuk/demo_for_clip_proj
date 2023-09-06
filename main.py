@@ -147,34 +147,47 @@ def create_ui():
         gr.Markdown("Some features that can be done using CLIP")
         with gr.Tab("Catalog"):
             catalog_dropdown_input = gr.Dropdown(categories[1:], label="Choose needed category please")
-            catalog_image_output_plot = gr.Gallery(columns=7, show_download_button=False, object_fit="contain", height="auto")
+            catalog_image_output_plot = gr.Gallery(columns=7, show_download_button=False, 
+                                                   object_fit="contain", height="auto")
 
         with gr.Tab("Search by Text description"):
-            sbt_text_input = gr.Textbox(label="Add text description of interested item please")
-            sbt_dropdown_input = gr.Dropdown(categories, label="Choose needed category please")
-            sbt_button = gr.Button("Show")
-            sbt_image_output = gr.Gallery(preview=True, show_download_button=False, object_fit="contain", height="auto")
+            with gr.Row():
+                with gr.Column():
+                    sbt_text_input = gr.Textbox(label="Add text description of interested item please")
+                    sbt_dropdown_input = gr.Dropdown(categories, label="Choose needed category please")
+                    sbt_button = gr.Button("Show")
+                with gr.Column():
+                    sbt_image_output = gr.Gallery(preview=True, show_download_button=False, 
+                                                  object_fit="contain", height="auto")
 
         with gr.Tab("Similar to input img"):
-            sti_image_input = gr.Image()
-            sti_dropdown_input = gr.Dropdown(categories, label="Choose needed category please")
-            sti_button = gr.Button("Show")
-            sti_image_output = gr.Gallery(preview=True, show_download_button=False, object_fit="contain", height="auto")
+            with gr.Row():
+                with gr.Column():
+                    sti_image_input = gr.Image()
+                    sti_dropdown_input = gr.Dropdown(categories, label="Choose needed category please")
+                    sti_button = gr.Button("Show")
+                with gr.Column():
+                    sti_image_output = gr.Gallery(preview=True, show_download_button=False, 
+                                                  object_fit="contain", height="auto")
 
         with gr.Tab("Similar to input img and text"):
-            img_and_txt_text_input = gr.Textbox(label="Add text description of interested item please")
-            img_and_txt_image_input = gr.Image()
-            img_and_txt_dropdown_input = gr.Dropdown(categories, label="Choose needed category please")
-            img_and_txt_slider = gr.Slider(0, 1, value=0.65 ,label="Text impact strength:")
-            img_and_txt_button = gr.Button("Show")
-            img_and_txt_image_output = gr.Gallery(preview=True, show_download_button=False, object_fit="contain", height="auto")
-
+            with gr.Row():
+                with gr.Column():
+                    img_and_txt_image_input = gr.Image()
+                    img_and_txt_text_input = gr.Textbox(label="Add text description of interested item please")
+                    img_and_txt_dropdown_input = gr.Dropdown(categories, label="Choose needed category please")
+                    img_and_txt_slider = gr.Slider(0, 1, value=0.65 ,label="Text impact strength:")
+                    img_and_txt_button = gr.Button("Show")
+                with gr.Column():
+                    img_and_txt_image_output = gr.Gallery(preview=True, show_download_button=False, 
+                                                          object_fit="contain", height="auto")
         
         catalog_dropdown_input.change(show_catalog, inputs=catalog_dropdown_input, outputs=catalog_image_output_plot)
         sbt_button.click(search_by_text, inputs=[sbt_text_input, sbt_dropdown_input], outputs=sbt_image_output)
         sti_button.click(search_by_image, inputs=[sti_image_input, sti_dropdown_input], outputs=sti_image_output)
-        img_and_txt_button.click(search_by_image_and_text, 
-                                inputs=[img_and_txt_text_input, img_and_txt_image_input, img_and_txt_dropdown_input, img_and_txt_slider], 
+        img_and_txt_button.click(search_by_image_and_text,
+                                inputs=[img_and_txt_text_input, img_and_txt_image_input, 
+                                        img_and_txt_dropdown_input, img_and_txt_slider], 
                                 outputs=img_and_txt_image_output)
 
 
